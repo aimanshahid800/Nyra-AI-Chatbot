@@ -6,6 +6,13 @@ export interface ChatMessage {
   agent_used?: string;
 }
 
+export interface ChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: number;
+}
+
 export interface ChatRequest {
   message: string;
   session_id?: string;
@@ -17,9 +24,7 @@ export interface ChatResponse {
   session_id: string;
 }
 
-export async function sendMessage(
-  request: ChatRequest
-): Promise<ChatResponse> {
+export async function sendMessage(request: ChatRequest): Promise<ChatResponse> {
   const res = await fetch(`${API_BASE}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -36,4 +41,34 @@ export async function sendMessage(
 export async function getHealth(): Promise<{ status: string }> {
   const res = await fetch(`${API_BASE}/health`);
   return res.json();
+}
+
+const STORAGE_KEY = "nyra_sessions";
+
+export function loadSessions(): ChatSession[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveSessions(sessions: ChatSession[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+}
+
+export function createSession(): ChatSession {
+  return {
+    id: crypto.randomUUID(),
+    title: "New chat",
+    messages: [],
+    createdAt: Date.now(),
+  };
+}
+
+export function generateTitle(firstMessage: string): string {
+  const cleaned = firstMessage.replace(/[^\w\s]/g, "").trim();
+  const words = cleaned.split(/\s+/).slice(0, 5);
+  return words.join(" ") || "New chat";
 }

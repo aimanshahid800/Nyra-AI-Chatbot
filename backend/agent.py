@@ -1,6 +1,7 @@
 # agent.py - Multi-Agent Setup with OpenAI Agents SDK + Gemini
 
 import os
+import pathlib
 from dotenv import load_dotenv
 from agents import (
     Agent,
@@ -14,18 +15,17 @@ from tools import create_study_schedule, generate_mcq_quiz, summarize_notes
 
 load_dotenv(dotenv_path=str(pathlib.Path(__file__).parent / ".env"))
 
-# ============ Gemini Client Setup ============
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY not found in .env file.")
+# ============ Ollama Local Setup ============
+# We switch from Gemini Cloud to Local Ollama
+# Ensure Ollama is running: `ollama serve`
 
 gemini_client = AsyncOpenAI(
-    api_key=GEMINI_API_KEY,
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
+    api_key="ollama", # Not needed for local, but SDK requires it
+    base_url="http://localhost:11434/v1"
 )
 
 model = OpenAIChatCompletionsModel(
-    model="gemini-2.0-flash",
+    model="gemma4:31b-cloud", # Using the model you have installed
     openai_client=gemini_client,
 )
 
