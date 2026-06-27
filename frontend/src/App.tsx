@@ -266,7 +266,7 @@ export default function App() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useTheme();
 
@@ -345,19 +345,14 @@ export default function App() {
   if (showIntro) return <NyraIntro onComplete={() => setShowIntro(false)} />;
 
   return (
-    <div
-      className="h-screen w-full flex overflow-hidden"
-      style={{
-        background: "linear-gradient(180deg, rgba(0, 212, 255, 0.08) 0%, rgba(123, 97, 255, 0.04) 25%, var(--surface-base) 60%)",
-      }}
-    >
+    <div className="h-screen w-full flex overflow-hidden" style={{ background: "var(--surface-base)" }}>
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 9999, opacity: 0.012 }}>
         <div style={{ width: "100%", height: "100%", backgroundImage: "url('/noise.svg')" }} />
       </div>
 
       <Sidebar
         isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
         sessions={sessions}
         activeSessionId={activeSessionId}
         onSelectSession={setActiveSessionId}
@@ -365,12 +360,7 @@ export default function App() {
         onDeleteSession={handleDeleteSession}
       />
 
-      <main
-        className="flex-1 flex flex-col min-w-0 relative"
-        style={{
-          background: "linear-gradient(180deg, rgba(0, 212, 255, 0.06) 0%, rgba(123, 97, 255, 0.03) 20%, var(--surface-base) 50%)",
-        }}
-      >
+      <main className="flex-1 flex flex-col min-w-0 relative">
         <header
           className="h-[60px] flex items-center justify-between px-5 flex-shrink-0 relative z-30"
           style={{
@@ -381,7 +371,7 @@ export default function App() {
           <div className="flex items-center gap-3.5">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 rounded-[var(--radius-sm)] glass cursor-pointer transition-colors duration-200 hover:bg-white/[0.04]"
+              className="p-2 rounded-[var(--radius-sm)] glass cursor-pointer transition-colors duration-200 hover:bg-white/[0.04]"
               aria-label="Toggle sidebar"
             >
               <Menu size={17} className="text-[var(--text-muted)]" />

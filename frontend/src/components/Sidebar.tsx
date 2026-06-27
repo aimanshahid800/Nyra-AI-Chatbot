@@ -4,7 +4,7 @@ import type { ChatSession } from "../services/api";
 
 interface Props {
   isOpen: boolean;
-  onClose: () => void;
+  onToggle: () => void;
   sessions: ChatSession[];
   activeSessionId: string | null;
   onSelectSession: (id: string) => void;
@@ -35,13 +35,13 @@ function groupByDate(sessions: ChatSession[]) {
   return groups;
 }
 
-export default function Sidebar({ isOpen, onClose, sessions, activeSessionId, onSelectSession, onNewChat, onDeleteSession }: Props) {
+export default function Sidebar({ isOpen, onToggle, sessions, activeSessionId, onSelectSession, onNewChat, onDeleteSession }: Props) {
   const groups = groupByDate(sessions);
 
   return (
     <>
       <AnimatePresence>
-        {isOpen && (
+        {!isOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -49,18 +49,22 @@ export default function Sidebar({ isOpen, onClose, sessions, activeSessionId, on
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-40 lg:hidden"
             style={{ background: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(4px)" }}
-            onClick={onClose}
+            onClick={onToggle}
           />
         )}
       </AnimatePresence>
 
-      <aside
-        className={`fixed lg:relative z-50 top-0 left-0 h-full w-[280px] flex flex-col transition-transform duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        }`}
+      <motion.aside
+        initial={false}
+        animate={{
+          width: isOpen ? 280 : 0,
+          opacity: isOpen ? 1 : 0,
+        }}
+        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+        className="fixed lg:relative z-50 top-0 left-0 h-full overflow-hidden flex-shrink-0"
         style={{
-          background: "linear-gradient(180deg, rgba(110, 100, 252, 0.2) 0%, var(--surface-base) 40%)",
-          borderRight: "1px solid var(--border-subtle)",
+          background: "linear-gradient(180deg, rgba(0, 212, 255, 0.04) 0%, var(--surface-base) 40%)",
+          borderRight: isOpen ? "1px solid var(--border-subtle)" : "none",
         }}
       >
         {/* Logo */}
@@ -89,7 +93,7 @@ export default function Sidebar({ isOpen, onClose, sessions, activeSessionId, on
               </div>
             </div>
             <button
-              onClick={onClose}
+              onClick={onToggle}
               className="lg:hidden p-1.5 rounded-[var(--radius-sm)] glass cursor-pointer transition-colors hover:bg-white/[0.04]"
             >
               <X size={14} className="text-[var(--text-muted)]" />
@@ -138,7 +142,7 @@ export default function Sidebar({ isOpen, onClose, sessions, activeSessionId, on
                   return (
                     <div
                       key={session.id}
-                      onClick={() => { onSelectSession(session.id); onClose(); }}
+                      onClick={() => { onSelectSession(session.id); if (window.innerWidth < 1024) onToggle(); }}
                       className="group flex items-center gap-2.5 px-3 py-2 rounded-[var(--radius-sm)] cursor-pointer transition-all duration-150"
                       style={{
                         background: isActive ? "var(--accent-cyan-subtle)" : "transparent",
@@ -183,7 +187,7 @@ export default function Sidebar({ isOpen, onClose, sessions, activeSessionId, on
             React + FastAPI + Gemini
           </p>
         </div>
-      </aside>
+      </motion.aside>
     </>
   );
 }
