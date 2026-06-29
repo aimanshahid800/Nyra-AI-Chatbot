@@ -16,6 +16,8 @@ import InputBar from "./components/InputBar";
 import MessageBubble from "./components/MessageBubble";
 import TypingIndicator from "./components/TypingIndicator";
 import RainBackground from "./components/RainBackground";
+import SettingsModal from "./components/SettingsModal";
+import QuizPopup from "./components/QuizPopup";
 import { FlipFadeText } from "./components/ui/flip-fade-text";
 import { FlipText } from "./components/ui/flip-text";
 import {
@@ -25,8 +27,11 @@ import {
   saveSessions,
   createSession,
   generateTitle,
+  generateQuiz,
+  extractQuizTopic,
   type ChatSession,
   type ChatMessage,
+  type QuizData,
 } from "./services/api";
 
 const QUICK_ACTIONS = [
@@ -267,6 +272,8 @@ export default function App() {
   const [isTyping, setIsTyping] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [activeQuiz, setActiveQuiz] = useState<QuizData | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useTheme();
 
@@ -326,6 +333,35 @@ export default function App() {
     }
 
     persist(updatedSessions);
+
+    const quizTopic = extractQuizTopic(text);
+    if (quizTopic) {
+      setIsTyping(true);
+      try {
+        const stored = localStorage.getItem("nyra_settings");
+        const settings = stored ? JSON.parse(stored) : {};
+        const difficulty = settings?.quiz?.difficulty || "medium";
+        const numQuestions = settings?.quiz?.numQuestions || 5;
+        const quizData = await generateQuiz(quizTopic, numQuestions, difficulty);
+        setActiveQuiz(quizData);
+        const quizMsg: ChatMessage = {
+          role: "assistant",
+          content: `Here is your quiz on "${quizTopic}" with ${quizData.questions.length} questions! Click "Open Quiz" to start.`,
+          agent_used: "Quiz Generator",
+          quiz_data: quizData,
+        };
+        setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, messages: [...s.messages, quizMsg] } : s));
+        setSessions((prev) => { saveSessions(prev); return prev; });
+      } catch {
+        const assistantMsg: ChatMessage = { role: "assistant", content: "Sorry, I couldn't generate the quiz. Make sure the backend is running on port 8000.", agent_used: "Nyra" };
+        setSessions((prev) => prev.map((s) => s.id === sessionId ? { ...s, messages: [...s.messages, assistantMsg] } : s));
+        setSessions((prev) => { saveSessions(prev); return prev; });
+      } finally {
+        setIsTyping(false);
+      }
+      return;
+    }
+
     setIsTyping(true);
 
     try {
@@ -405,6 +441,7 @@ export default function App() {
               )}
             </button>
             <button
+              onClick={() => setSettingsOpen(true)}
               className="p-2 rounded-[var(--radius-sm)] glass transition-all duration-200 cursor-pointer hover:bg-white/[0.04]"
               aria-label="Settings"
             >
@@ -422,22 +459,36 @@ export default function App() {
           </div>
         </header>
 
-        {!activeSession || activeSession.messages.length === 0 ? (
-          <WelcomeScreen onAction={handleSend} />
-        ) : (
-          <div className="flex-1 overflow-y-auto py-3">
-            <div className="max-w-[720px] mx-auto">
-              {activeSession.messages.map((msg, i) => (
-                <MessageBubble key={i} message={msg} />
-              ))}
-              {isTyping && <TypingIndicator />}
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
-        )}
+        <div className="flex-1 flex min-h-0">
+          {/* Chat area */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {!activeSession || activeSession.messages.length === 0 ? (
+              <WelcomeScreen onAction={handleSend} />
+            ) : (
+              <div className="flex-1 overflow-y-auto py-3">
+                <div className="max-w-[720px] mx-auto">
+                  {activeSession.messages.map((msg, i) => (
+                    <MessageBubble key={i} message={msg} onOpenQuiz={(quiz) => setActiveQuiz(quiz)} />
+                  ))}
+                  {isTyping && <TypingIndicator />}
+                  <div ref={messagesEndRef} />
+                </div>
+              </div>
+            )}
 
-        <InputBar onSend={handleSend} disabled={isTyping} />
+            <InputBar onSend={handleSend} disabled={isTyping} />
+          </div>
+        </div>
       </main>
+
+      {/* Quiz popup - floating modal */}
+      <AnimatePresence>
+        {activeQuiz && (
+          <QuizPopup quiz={activeQuiz} onClose={() => setActiveQuiz(null)} />
+        )}
+      </AnimatePresence>
+
+      <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }

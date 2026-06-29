@@ -1,14 +1,20 @@
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, ExternalLink } from "lucide-react";
 import { useState } from "react";
-import type { ChatMessage } from "../services/api";
+import type { ChatMessage, QuizData } from "../services/api";
+import { useSettings } from "../contexts/SettingsContext";
+
+const FONT_SIZES = { small: "12px", medium: "13px", large: "15px" };
 
 interface Props {
   message: ChatMessage;
+  onOpenQuiz?: (quiz: QuizData) => void;
 }
 
-export default function MessageBubble({ message }: Props) {
+export default function MessageBubble({ message, onOpenQuiz }: Props) {
   const isUser = message.role === "user";
   const [copied, setCopied] = useState(false);
+  const { settings } = useSettings();
+  const fontSize = FONT_SIZES[settings.fontSize];
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content);
@@ -32,8 +38,9 @@ export default function MessageBubble({ message }: Props) {
 
       <div className={`max-w-[75%] flex flex-col ${isUser ? "items-end" : "items-start"}`}>
         <div
-          className="rounded-[18px] px-4 py-3 text-[13px] leading-[1.65] relative group transition-all duration-200"
+          className="rounded-[18px] px-4 py-3 leading-[1.65] relative group transition-all duration-200"
           style={{
+            fontSize,
             background: isUser
               ? "linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(123, 97, 255, 0.06))"
               : "var(--surface-raised)",
@@ -49,6 +56,29 @@ export default function MessageBubble({ message }: Props) {
           }}
         >
           <div className="whitespace-pre-wrap">{message.content}</div>
+
+          {message.quiz_data && onOpenQuiz && (
+            <button
+              onClick={() => onOpenQuiz(message.quiz_data!)}
+              className="mt-3 flex items-center gap-2 px-4 py-2 rounded-[10px] text-[12px] font-semibold transition-all duration-200 cursor-pointer"
+              style={{
+                background: "linear-gradient(135deg, var(--accent-cyan), var(--accent-purple))",
+                color: "#ffffff",
+                boxShadow: "0 2px 12px rgba(0, 212, 255, 0.2)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-1px)";
+                e.currentTarget.style.boxShadow = "0 4px 16px rgba(0, 212, 255, 0.3)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 2px 12px rgba(0, 212, 255, 0.2)";
+              }}
+            >
+              <ExternalLink size={12} />
+              Open Quiz
+            </button>
+          )}
 
           {!isUser && (
             <button

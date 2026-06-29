@@ -13,6 +13,7 @@ class ChatResponse(BaseModel):
     response: str
     agent_used: str
     session_id: str
+    quiz_data: Optional[dict] = None
 
 
 class ScheduleRequest(BaseModel):
@@ -30,11 +31,19 @@ class ScheduleResponse(BaseModel):
 class QuizRequest(BaseModel):
     topic: str
     num_questions: int = 5
+    difficulty: str = "medium"
 
 
-class QuizResponse(BaseModel):
-    questions: list[dict]
-    topic: str
+class QuizQuestion(BaseModel):
+    question: str
+    options: list[str]
+    correct_index: int
+    hint: str
+
+
+class QuizData(BaseModel):
+    title: str
+    questions: list[QuizQuestion]
 
 
 class SummarizeRequest(BaseModel):

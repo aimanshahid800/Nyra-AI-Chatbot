@@ -1,12 +1,13 @@
 # main.py - FastAPI Server for Nyra AI Chatbot
 
 import uuid
+import json
 import asyncio
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from agents import Runner  
-from schemas import ChatRequest, ChatResponse
-from agent import nyra_agent, config
+from agents import Runner
+from schemas import ChatRequest, ChatResponse, QuizRequest, QuizData
+from agent import nyra_agent, config, gemini_client
 
 
 # ============ FastAPI App Setup ============
@@ -72,6 +73,73 @@ async def chat(request: ChatRequest):
             session_id=session_id,
         )
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============ Quiz Generation Endpoint ============
+@app.post("/quiz", response_model=QuizData)
+async def generate_quiz(request: QuizRequest):
+    try:
+        difficulty_map = {"easy": "basic", "medium": "intermediate", "hard": "advanced"}
+        diff_label = difficulty_map.get(request.difficulty, "intermediate")
+
+        prompt = f"""Generate exactly {request.num_questions} MCQ quiz questions about "{request.topic}" at {diff_label} level.
+
+IMPORTANT: Return ONLY valid JSON, no markdown, no code blocks. Use this exact format:
+{{
+  "title": "Quiz title here",
+  "questions": [
+    {{
+      "question": "Question text here?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correct_index": 0,
+      "hint": "Brief hint here"
+    }}
+  ]
+}}
+
+Rules:
+- Each question must have exactly 4 options
+- correct_index is 0-based (0=A, 1=B, 2=C, 3=D)
+- Hints should be short and helpful
+- Questions should be clear and accurate
+- Mix question types: definitions, examples, comparisons, code snippets"""
+
+        completion = await gemini_client.chat.completions.create(
+            model="gemma4:31b-cloud",
+            messages=[
+                {"role": "system", "content": "You are a quiz generator. Return only valid JSON."},
+                {"role": "user", "content": prompt}
+            ],
+        )
+
+        raw = completion.choices[0].message.content.strip()
+
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1]
+            if raw.endswith("```"):
+                raw = raw[:-3]
+            raw = raw.strip()
+
+        quiz_data = json.loads(raw)
+
+        questions = []
+        for q in quiz_data.get("questions", []):
+            questions.append({
+                "question": q["question"],
+                "options": q["options"],
+                "correct_index": q["correct_index"],
+                "hint": q.get("hint", ""),
+            })
+
+        return QuizData(
+            title=quiz_data.get("title", f"{request.topic} Quiz"),
+            questions=questions,
+        )
+
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to parse quiz data: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
