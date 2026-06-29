@@ -328,11 +328,11 @@ export default function QuizPopup({ quiz, onClose }: Props) {
                   <button
                     onClick={handleRestart}
                     className="flex items-center gap-2 px-6 py-2.5 rounded-[12px] text-[13px] font-semibold transition-all duration-200 cursor-pointer"
-                    style={{
-                      background: "linear-gradient(135deg, var(--accent-cyan), var(--accent-purple))",
-                      color: "#09090b",
-                      boxShadow: "0 2px 16px rgba(0, 212, 255, 0.25)",
-                    }}
+                  style={{
+                    background: "linear-gradient(135deg, var(--accent-cyan), var(--accent-purple))",
+                    color: "#ffffff",
+                    boxShadow: "0 2px 16px rgba(0, 212, 255, 0.25)",
+                  }}
                   >
                     <RotateCcw size={13} />
                     Try Again
@@ -356,7 +356,7 @@ export default function QuizPopup({ quiz, onClose }: Props) {
                   background: revealed
                     ? "linear-gradient(135deg, var(--accent-cyan), var(--accent-purple))"
                     : "var(--surface-raised)",
-                  color: revealed ? "#09090b" : "var(--text-ghost)",
+                  color: revealed ? "#ffffff" : "var(--text-ghost)",
                   borderRadius: "12px",
                   boxShadow: revealed ? "0 2px 16px rgba(0, 212, 255, 0.2)" : "none",
                   border: revealed ? "none" : "1px solid var(--border-default)",
